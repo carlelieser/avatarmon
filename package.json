@@ -1,0 +1,27 @@
+{
+  "name": "avatarmon",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "app",
+    "server"
+  ],
+  "scripts": {
+    "app:start": "npm run start -w app",
+    "app:android": "npm run android -w app",
+    "app:ios": "npm run ios -w app",
+    "app:web": "npm run web -w app",
+    "app:test": "npm run test -w app",
+    "app:typecheck": "npm run typecheck -w app",
+    "server:dev": "npm run dev -w server",
+    "server:build": "npm run build -w server",
+    "server:start": "npm run start -w server",
+    "server:test": "npm run test -w server",
+    "dev": "concurrently \"npm run server:dev\" \"npm run app:start\"",
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
