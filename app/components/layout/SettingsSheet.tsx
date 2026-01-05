@@ -1,42 +1,35 @@
-import React from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useColor } from '@/hooks/useColor';
 import { useAvatarStore } from '@/store/avatar-store';
+import { useSubscriptionStore } from '@/store/subscription-store';
 import { BORDER_RADIUS, FONTS } from '@/theme/globals';
 import { FREE_DAILY_LIMIT } from '@/schemas/user';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import {
   Crown,
   Mail,
   FileText,
   Shield,
   Trash2,
-  X,
   History,
+  RotateCcw,
 } from 'lucide-react-native';
-import { useEffect } from 'react';
 import {
   Alert,
-  Dimensions,
   Linking,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import { Text } from '@/components/ui/text';
+import { Paywall } from '@/components/subscription/Paywall';
 import type { GenerationRecord } from '@/schemas/api';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const SHEET_HEIGHT = SCREEN_HEIGHT * 0.85;
 
 interface SettingsSheetProps {
   open: boolean;
@@ -74,6 +67,9 @@ function SettingsRow({ icon, title, subtitle, onPress, destructive }: SettingsRo
 }
 
 export function SettingsSheet({ open, onClose }: SettingsSheetProps) {
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+
   const backgroundColor = useColor('background');
   const cardBg = useColor('card');
   const textColor = useColor('text');
@@ -84,52 +80,50 @@ export function SettingsSheet({ open, onClose }: SettingsSheetProps) {
   const successColor = useColor('success');
   const borderColor = useColor('border');
 
-  const { user, setPremium, clearHistory, resetDailyUsage, deleteFromHistory } = useAvatarStore();
+  const { user, clearHistory, resetDailyUsage, deleteFromHistory } = useAvatarStore();
+  const hasPremium = useSubscriptionStore(
+    (state) => state.subscription.tier === 'premium' && state.subscription.isActive
+  );
+  const restore = useSubscriptionStore((state) => state.restore);
   const generations = user.generations;
-  const remaining = user.hasPremium
+  const remaining = hasPremium
     ? Infinity
     : Math.max(0, FREE_DAILY_LIMIT - user.generationsToday);
 
-  const [isVisible, setIsVisible] = React.useState(open);
-  const translateY = useSharedValue(SHEET_HEIGHT);
-  const overlayOpacity = useSharedValue(0);
+  const snapPoints = useMemo(() => ['85%'], []);
 
-  useEffect(() => {
-    if (open) {
-      setIsVisible(true);
-      translateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.quad) });
-      overlayOpacity.value = withTiming(1, { duration: 300 });
-    } else if (isVisible) {
-      translateY.value = withTiming(SHEET_HEIGHT, { duration: 250 }, (finished) => {
-        if (finished) runOnJS(setIsVisible)(false);
-      });
-      overlayOpacity.value = withTiming(0, { duration: 250 });
-    }
-  }, [open]);
+  const handleSheetChanges = useCallback(
+    (index: number) => {
+      if (index === -1) {
+        onClose();
+      }
+    },
+    [onClose]
+  );
 
-  const animatedSheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const animatedOverlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value * 0.5,
-  }));
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
 
   const handleUpgrade = () => {
-    Alert.alert(
-      'Upgrade to Premium',
-      'Get unlimited generations and HD exports for $9.99/month',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Subscribe',
-          onPress: () => {
-            setPremium(true);
-            Alert.alert('Success', 'You are now a Premium member!');
-          },
-        },
-      ]
-    );
+    setPaywallVisible(true);
+  };
+
+  const handleRestore = async () => {
+    const restored = await restore();
+    if (restored) {
+      Alert.alert('Success', 'Your subscription has been restored!');
+    } else {
+      Alert.alert('No Subscription Found', 'We could not find an active subscription to restore.');
+    }
   };
 
   const handleClearData = () => {
@@ -167,220 +161,194 @@ export function SettingsSheet({ open, onClose }: SettingsSheetProps) {
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
-  if (!isVisible) return null;
+  if (!open) return null;
 
   return (
-    <Modal visible={isVisible} transparent animationType="none" onRequestClose={onClose}>
-      <View style={styles.modalContainer}>
-        <Animated.View style={[styles.overlay, animatedOverlayStyle]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        </Animated.View>
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={0}
+      snapPoints={snapPoints}
+      onChange={handleSheetChanges}
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor }}
+      handleIndicatorStyle={{ backgroundColor: borderColor }}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: textColor }]}>Settings</Text>
+      </View>
 
-        <Animated.View
-          style={[
-            styles.sheet,
-            { backgroundColor, borderColor },
-            animatedSheetStyle,
-          ]}
-        >
-          {/* Handle */}
-          <View style={styles.handleContainer}>
-            <View style={[styles.handle, { backgroundColor: borderColor }]} />
-          </View>
+      <BottomSheetScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Paywall Modal */}
+        <Paywall visible={paywallVisible} onClose={() => setPaywallVisible(false)} />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: textColor }]}>Settings</Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
-              <X size={24} color={textColor} />
+        {/* Premium Section */}
+        {!hasPremium && (
+          <View style={[styles.premiumCard, { backgroundColor: primaryColor }]}>
+            <Crown size={28} color={primaryFgColor} />
+            <View style={styles.premiumText}>
+              <Text style={[styles.premiumTitle, { color: primaryFgColor }]}>
+                Upgrade to Premium
+              </Text>
+              <Text style={[styles.premiumSubtitle, { color: `${primaryFgColor}cc` }]}>
+                Unlimited generations
+              </Text>
+            </View>
+            <Pressable
+              style={[styles.upgradeButton, { backgroundColor: primaryFgColor }]}
+              onPress={handleUpgrade}
+            >
+              <Text style={[styles.upgradeText, { color: primaryColor }]}>Upgrade</Text>
             </Pressable>
           </View>
+        )}
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Premium Section */}
-            {!user.hasPremium && (
-              <View style={[styles.premiumCard, { backgroundColor: primaryColor }]}>
-                <Crown size={28} color={primaryFgColor} />
-                <View style={styles.premiumText}>
-                  <Text style={[styles.premiumTitle, { color: primaryFgColor }]}>
-                    Upgrade to Premium
-                  </Text>
-                  <Text style={[styles.premiumSubtitle, { color: `${primaryFgColor}cc` }]}>
-                    Unlimited generations
-                  </Text>
-                </View>
+        {hasPremium && (
+          <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.premiumStatus}>
+              <Crown size={20} color={successColor} />
+              <Text style={[styles.sectionTitle, { color: textColor, marginLeft: 8 }]}>
+                Premium Member
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Usage */}
+        <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
+          <Text style={[styles.sectionLabel, { color: mutedColor }]}>USAGE</Text>
+          <Text style={[styles.usageTitle, { color: textColor }]}>
+            {hasPremium ? 'Unlimited' : `${remaining} of ${FREE_DAILY_LIMIT}`}
+          </Text>
+          <Text style={[styles.usageSubtitle, { color: mutedColor }]}>
+            generations remaining today
+          </Text>
+          <View style={[styles.usageBar, { backgroundColor: borderColor }]}>
+            <View
+              style={[
+                styles.usageProgress,
+                {
+                  backgroundColor: primaryColor,
+                  width: hasPremium
+                    ? '100%'
+                    : `${((FREE_DAILY_LIMIT - remaining) / FREE_DAILY_LIMIT) * 100}%`,
+                },
+              ]}
+            />
+          </View>
+        </View>
+
+        {/* History */}
+        <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionLabelRow}>
+              <History size={16} color={mutedColor} />
+              <Text style={[styles.sectionLabel, { color: mutedColor, marginLeft: 6 }]}>
+                HISTORY ({generations.length})
+              </Text>
+            </View>
+            {generations.length > 0 && (
+              <Pressable onPress={() => clearHistory()}>
+                <Text style={[styles.clearText, { color: destructiveColor }]}>Clear</Text>
+              </Pressable>
+            )}
+          </View>
+          {generations.length === 0 ? (
+            <View style={styles.emptyState}>
+              <View style={[styles.emptyIconContainer, { backgroundColor: borderColor }]}>
+                <History size={24} color={mutedColor} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: textColor }]}>No avatars yet</Text>
+              <Text style={[styles.emptySubtitle, { color: mutedColor }]}>
+                Your generated avatars will appear here
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.historyList}
+            >
+              {generations.slice(0, 10).map((item: GenerationRecord) => (
                 <Pressable
-                  style={[styles.upgradeButton, { backgroundColor: primaryFgColor }]}
-                  onPress={handleUpgrade}
+                  key={item.id}
+                  style={[styles.historyItem, { borderColor }]}
+                  onPress={() => handleAvatarPress(item.id)}
+                  onLongPress={() => handleDeleteAvatar(item.id)}
                 >
-                  <Text style={[styles.upgradeText, { color: primaryColor }]}>Upgrade</Text>
+                  <Image
+                    source={{ uri: item.thumbnailUrl }}
+                    style={styles.historyImage}
+                    contentFit="cover"
+                  />
+                  <Text style={[styles.historyDate, { color: mutedColor }]}>
+                    {formatDate(item.createdAt)}
+                  </Text>
                 </Pressable>
-              </View>
-            )}
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
-            {user.hasPremium && (
-              <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
-                <View style={styles.premiumStatus}>
-                  <Crown size={20} color={successColor} />
-                  <Text style={[styles.sectionTitle, { color: textColor, marginLeft: 8 }]}>
-                    Premium Member
-                  </Text>
-                </View>
-              </View>
-            )}
+        {/* Support */}
+        <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
+          <Text style={[styles.sectionLabel, { color: mutedColor }]}>SUPPORT</Text>
+          <SettingsRow
+            icon={<RotateCcw size={18} color={textColor} />}
+            title="Restore Purchases"
+            onPress={handleRestore}
+          />
+          <SettingsRow
+            icon={<Mail size={18} color={textColor} />}
+            title="Contact Us"
+            onPress={() => Linking.openURL('mailto:support@avatarcreator.app')}
+          />
+          <SettingsRow
+            icon={<Shield size={18} color={textColor} />}
+            title="Privacy Policy"
+            onPress={() => Linking.openURL('https://avatarcreator.app/privacy')}
+          />
+          <SettingsRow
+            icon={<FileText size={18} color={textColor} />}
+            title="Terms of Service"
+            onPress={() => Linking.openURL('https://avatarcreator.app/terms')}
+          />
+        </View>
 
-            {/* Usage */}
-            <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
-              <Text style={[styles.sectionLabel, { color: mutedColor }]}>USAGE</Text>
-              <Text style={[styles.usageTitle, { color: textColor }]}>
-                {user.hasPremium ? 'Unlimited' : `${remaining} of ${FREE_DAILY_LIMIT}`}
-              </Text>
-              <Text style={[styles.usageSubtitle, { color: mutedColor }]}>
-                generations remaining today
-              </Text>
-              <View style={[styles.usageBar, { backgroundColor: borderColor }]}>
-                <View
-                  style={[
-                    styles.usageProgress,
-                    {
-                      backgroundColor: primaryColor,
-                      width: user.hasPremium
-                        ? '100%'
-                        : `${((FREE_DAILY_LIMIT - remaining) / FREE_DAILY_LIMIT) * 100}%`,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
+        {/* Data */}
+        <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
+          <Text style={[styles.sectionLabel, { color: mutedColor }]}>DATA</Text>
+          <SettingsRow
+            icon={<Trash2 size={18} color={destructiveColor} />}
+            title="Clear All Data"
+            onPress={handleClearData}
+            destructive
+          />
+        </View>
 
-            {/* History */}
-            <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionLabelRow}>
-                  <History size={16} color={mutedColor} />
-                  <Text style={[styles.sectionLabel, { color: mutedColor, marginLeft: 6 }]}>
-                    HISTORY ({generations.length})
-                  </Text>
-                </View>
-                {generations.length > 0 && (
-                  <Pressable onPress={() => clearHistory()}>
-                    <Text style={[styles.clearText, { color: destructiveColor }]}>Clear</Text>
-                  </Pressable>
-                )}
-              </View>
-              {generations.length === 0 ? (
-                <Text style={[styles.emptyText, { color: mutedColor }]}>
-                  No avatars yet. Generate your first one!
-                </Text>
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.historyList}
-                >
-                  {generations.slice(0, 10).map((item: GenerationRecord) => (
-                    <Pressable
-                      key={item.id}
-                      style={[styles.historyItem, { borderColor }]}
-                      onPress={() => handleAvatarPress(item.id)}
-                      onLongPress={() => handleDeleteAvatar(item.id)}
-                    >
-                      <Image
-                        source={{ uri: item.thumbnailUrl }}
-                        style={styles.historyImage}
-                        contentFit="cover"
-                      />
-                      <Text style={[styles.historyDate, { color: mutedColor }]}>
-                        {formatDate(item.createdAt)}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-
-            {/* Support */}
-            <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
-              <Text style={[styles.sectionLabel, { color: mutedColor }]}>SUPPORT</Text>
-              <SettingsRow
-                icon={<Mail size={18} color={textColor} />}
-                title="Contact Us"
-                onPress={() => Linking.openURL('mailto:support@avatarcreator.app')}
-              />
-              <SettingsRow
-                icon={<Shield size={18} color={textColor} />}
-                title="Privacy Policy"
-                onPress={() => Linking.openURL('https://avatarcreator.app/privacy')}
-              />
-              <SettingsRow
-                icon={<FileText size={18} color={textColor} />}
-                title="Terms of Service"
-                onPress={() => Linking.openURL('https://avatarcreator.app/terms')}
-              />
-            </View>
-
-            {/* Data */}
-            <View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
-              <Text style={[styles.sectionLabel, { color: mutedColor }]}>DATA</Text>
-              <SettingsRow
-                icon={<Trash2 size={18} color={destructiveColor} />}
-                title="Clear All Data"
-                onPress={handleClearData}
-                destructive
-              />
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={[styles.version, { color: mutedColor }]}>
-                Avatarmon v1.0.0
-              </Text>
-            </View>
-          </ScrollView>
-        </Animated.View>
-      </View>
-    </Modal>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={[styles.version, { color: mutedColor }]}>
+            Avatarmon v1.0.0
+          </Text>
+        </View>
+      </BottomSheetScrollView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
-  },
-  sheet: {
-    height: SHEET_HEIGHT,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-  },
-  handleContainer: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
   headerTitle: {
     fontSize: 20,
     fontFamily: FONTS.bold,
-  },
-  closeButton: {
-    padding: 4,
   },
   content: {
     flex: 1,
@@ -490,10 +458,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 4,
   },
-  emptyText: {
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  emptyIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontFamily: FONTS.semiBold,
+    marginBottom: 4,
+  },
+  emptySubtitle: {
     fontSize: 13,
     textAlign: 'center',
-    padding: 16,
   },
   row: {
     flexDirection: 'row',

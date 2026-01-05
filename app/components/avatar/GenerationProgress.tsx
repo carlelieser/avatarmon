@@ -112,6 +112,7 @@ export function GenerationProgress({
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
     padding: 16,
     borderRadius: BORDER_RADIUS,
   },

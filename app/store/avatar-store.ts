@@ -11,6 +11,7 @@ import type { GenerationRecord, GenerationStatus } from '@/schemas/api';
 import type { UserState } from '@/schemas/user';
 import { FREE_DAILY_LIMIT, MAX_HISTORY_ITEMS } from '@/schemas/user';
 import type { Style, AspectRatio } from '@/schemas/enums';
+import { useSubscriptionStore } from './subscription-store';
 
 const MAX_PHOTOS = 3;
 
@@ -58,6 +59,9 @@ interface AvatarState {
   setPremium: (isPremium: boolean) => void;
   incrementDailyUsage: () => void;
   resetDailyUsage: () => void;
+
+  // Daily reset
+  checkDailyReset: () => void;
 
   // Computed
   canGenerate: () => boolean;
@@ -237,16 +241,41 @@ export const useAvatarStore = create<AvatarState>()(
           user: { ...state.user, generationsToday: 0 },
         })),
 
+      // Daily reset check
+      checkDailyReset: () => {
+        const { user } = get();
+        if (!user.lastGenerationDate) return;
+
+        const lastDate = new Date(user.lastGenerationDate);
+        const today = new Date();
+
+        // Compare dates (ignoring time)
+        const isNewDay =
+          lastDate.getFullYear() !== today.getFullYear() ||
+          lastDate.getMonth() !== today.getMonth() ||
+          lastDate.getDate() !== today.getDate();
+
+        if (isNewDay && user.generationsToday > 0) {
+          set((state) => ({
+            user: { ...state.user, generationsToday: 0 },
+          }));
+        }
+      },
+
       // Computed
       canGenerate: () => {
+        get().checkDailyReset();
         const { user } = get();
-        if (user.hasPremium) return true;
+        const isPremium = useSubscriptionStore.getState().isPremium();
+        if (isPremium) return true;
         return user.generationsToday < FREE_DAILY_LIMIT;
       },
 
       remainingGenerations: () => {
+        get().checkDailyReset();
         const { user } = get();
-        if (user.hasPremium) return Infinity;
+        const isPremium = useSubscriptionStore.getState().isPremium();
+        if (isPremium) return Infinity;
         return Math.max(0, FREE_DAILY_LIMIT - user.generationsToday);
       },
     }),

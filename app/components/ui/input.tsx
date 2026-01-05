@@ -1,7 +1,13 @@
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useColor } from '@/hooks/useColor';
-import { BORDER_RADIUS, CORNERS, FONT_SIZE, HEIGHT } from '@/theme/globals';
+import {
+  BORDER_RADIUS,
+  CORNERS,
+  DISABLED_OPACITY,
+  FONT_SIZE,
+  HEIGHT,
+} from '@/theme/globals';
 import { LucideProps } from 'lucide-react-native';
 import React, { forwardRef, ReactElement, useState } from 'react';
 import {
@@ -134,7 +140,7 @@ export const Input = forwardRef<TextInput, InputProps>(
       <View style={containerStyle}>
         {/* Input Container */}
         <Pressable
-          style={[getVariantStyle(), disabled && { opacity: 0.6 }]}
+          style={[getVariantStyle(), disabled && { opacity: DISABLED_OPACITY }]}
           onPress={() => {
             if (!disabled && ref && 'current' in ref && ref.current) {
               ref.current.focus();
@@ -443,7 +449,7 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
       <Pressable
         onPress={() => ref && 'current' in ref && ref.current?.focus()}
         disabled={disabled}
-        style={{ opacity: disabled ? 0.6 : 1 }}
+        style={{ opacity: disabled ? DISABLED_OPACITY : 1 }}
       >
         <View
           style={{

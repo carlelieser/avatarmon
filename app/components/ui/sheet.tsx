@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useColor } from '@/hooks/useColor';
-import { BORDER_RADIUS, FONT_SIZE } from '@/theme/globals';
+import { ANIMATION, BORDER_RADIUS, FONT_SIZE } from '@/theme/globals';
 import { X } from 'lucide-react-native';
 import React, { useEffect } from 'react';
 import {
@@ -129,15 +129,18 @@ export function SheetContent({ children, style }: SheetContentProps) {
       setIsVisible(true); // Mount the modal
       // Animate in
       translateX.value = withTiming(0, {
-        duration: 300,
+        duration: ANIMATION.timing.slow,
         easing: Easing.out(Easing.quad),
       });
-      overlayOpacity.value = withTiming(1, { duration: 300 });
+      overlayOpacity.value = withTiming(1, { duration: ANIMATION.timing.slow });
     } else if (isVisible) {
       // Animate out, then hide modal in the callback
       translateX.value = withTiming(
         initialPosition,
-        { duration: 250 },
+        {
+          duration: ANIMATION.timing.normal,
+          easing: Easing.out(Easing.quad),
+        },
         (finished) => {
           if (finished) {
             // Use runOnJS to update React state from the UI thread
@@ -145,7 +148,7 @@ export function SheetContent({ children, style }: SheetContentProps) {
           }
         }
       );
-      overlayOpacity.value = withTiming(0, { duration: 250 });
+      overlayOpacity.value = withTiming(0, { duration: ANIMATION.timing.normal });
     }
   }, [open, side, sheetWidth]); // Rerun if these change
 

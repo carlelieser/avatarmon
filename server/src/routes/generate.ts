@@ -118,8 +118,13 @@ router.get('/:id', async (req: Request, res: Response) => {
     };
 
     if (status === 'completed' && prediction.output) {
-      const outputs = prediction.output as string[];
-      response.imageUrl = outputs[0];
+      const output = prediction.output;
+      // Handle both array and single string output formats from Replicate
+      if (Array.isArray(output) && output.length > 0) {
+        response.imageUrl = String(output[0]);
+      } else if (typeof output === 'string') {
+        response.imageUrl = output;
+      }
     }
 
     if (status === 'failed') {

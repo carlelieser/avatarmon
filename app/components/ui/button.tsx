@@ -2,7 +2,15 @@ import { Icon } from '@/components/ui/icon';
 import { ButtonSpinner, SpinnerVariant } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { useColor } from '@/hooks/useColor';
-import { CORNERS, FONT_SIZE, FONTS, HEIGHT } from '@/theme/globals';
+import {
+  ANIMATION,
+  CORNERS,
+  DISABLED_OPACITY,
+  FONT_SIZE,
+  FONTS,
+  GAP,
+  HEIGHT,
+} from '@/theme/globals';
 import * as Haptics from 'expo-haptics';
 import { LucideProps } from 'lucide-react-native';
 import { forwardRef } from 'react';
@@ -73,7 +81,9 @@ export const Button = forwardRef<View, ButtonProps>(
     const destructiveColor = useColor('red');
     const destructiveForegroundColor = useColor('destructiveForeground');
     const greenColor = useColor('green');
+    const successForegroundColor = useColor('successForeground');
     const borderColor = useColor('border');
+    const textMutedColor = useColor('textMuted');
 
     // Animation values for liquid glass effect
     const scale = useSharedValue(1);
@@ -148,13 +158,13 @@ export const Button = forwardRef<View, ButtonProps>(
         case 'destructive':
           return { ...baseTextStyle, color: destructiveForegroundColor };
         case 'success':
-          return { ...baseTextStyle, color: destructiveForegroundColor };
+          return { ...baseTextStyle, color: successForegroundColor };
         case 'outline':
           return { ...baseTextStyle, color: primaryColor };
         case 'secondary':
           return { ...baseTextStyle, color: secondaryForegroundColor };
         case 'ghost':
-          return { ...baseTextStyle, color: primaryColor };
+          return { ...baseTextStyle, color: textMutedColor };
         case 'link':
           return {
             ...baseTextStyle,
@@ -171,13 +181,13 @@ export const Button = forwardRef<View, ButtonProps>(
         case 'destructive':
           return destructiveForegroundColor;
         case 'success':
-          return destructiveForegroundColor;
+          return successForegroundColor;
         case 'outline':
           return primaryColor;
         case 'secondary':
           return secondaryForegroundColor;
         case 'ghost':
-          return primaryColor;
+          return textMutedColor;
         case 'link':
           return primaryColor;
         default:
@@ -215,11 +225,7 @@ export const Button = forwardRef<View, ButtonProps>(
       triggerHapticFeedback();
 
       // Scale up with bouncy spring animation
-      scale.value = withSpring(1.05, {
-        damping: 15,
-        stiffness: 400,
-        mass: 0.5,
-      });
+      scale.value = withSpring(1.05, ANIMATION.pressIn);
 
       // Slight brightness increase for glass effect
       brightness.value = withSpring(1.1, {
@@ -234,12 +240,7 @@ export const Button = forwardRef<View, ButtonProps>(
     const handlePressOut = (ev?: any) => {
       'worklet';
       // Return to original size with smooth spring
-      scale.value = withSpring(1, {
-        damping: 20,
-        stiffness: 400,
-        mass: 0.8,
-        overshootClamping: false,
-      });
+      scale.value = withSpring(1, ANIMATION.pressOut);
 
       // Return brightness to normal
       brightness.value = withSpring(1, {
@@ -268,7 +269,7 @@ export const Button = forwardRef<View, ButtonProps>(
     const animatedStyle = useAnimatedStyle(() => {
       return {
         transform: [{ scale: scale.value }],
-        opacity: brightness.value * (disabled ? 0.5 : 1),
+        opacity: brightness.value * (disabled ? DISABLED_OPACITY : 1),
       };
     });
 
@@ -344,7 +345,7 @@ export const Button = forwardRef<View, ButtonProps>(
             />
           ) : typeof children === 'string' ? (
             <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: GAP.button }}
             >
               {icon && (
                 <Icon name={icon} color={contentColor} size={iconSize} />
@@ -353,7 +354,7 @@ export const Button = forwardRef<View, ButtonProps>(
             </View>
           ) : (
             <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: GAP.button }}
             >
               {icon && (
                 <Icon name={icon} color={contentColor} size={iconSize} />
@@ -366,7 +367,7 @@ export const Button = forwardRef<View, ButtonProps>(
     ) : (
       <TouchableOpacity
         ref={ref}
-        style={[buttonStyle, disabled && { opacity: 0.5 }, styleWithoutFlex]}
+        style={[buttonStyle, disabled && { opacity: DISABLED_OPACITY }, styleWithoutFlex]}
         onPress={handleTouchablePress}
         disabled={disabled || loading}
         activeOpacity={0.8}
@@ -379,7 +380,7 @@ export const Button = forwardRef<View, ButtonProps>(
             color={contentColor}
           />
         ) : typeof children === 'string' ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: GAP.button }}>
             {icon && <Icon name={icon} color={contentColor} size={iconSize} />}
             <Text style={[finalTextStyle, textStyle]}>{children}</Text>
           </View>

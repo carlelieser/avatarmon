@@ -4,17 +4,17 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Share,
   Alert,
   ScrollView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { X, Download, Share2, Trash2 } from 'lucide-react-native';
 import { useColor } from '@/hooks/useColor';
 import { useAvatarStore } from '@/store/avatar-store';
 import { useExport } from '@/hooks/useExport';
-import { BORDER_RADIUS, FONTS } from '@/theme/globals';
+import { BORDER_RADIUS, FONTS, SPACING } from '@/theme/globals';
 
 export default function PreviewScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -39,7 +39,7 @@ export default function PreviewScreen() {
 
   if (!imageUrl) {
     return (
-      <View style={[styles.container, { backgroundColor }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
         <View style={styles.header}>
           <Pressable style={styles.closeButton} onPress={() => router.back()}>
             <X size={24} color={textColor} />
@@ -50,7 +50,7 @@ export default function PreviewScreen() {
             No preview available
           </Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -91,7 +91,7 @@ export default function PreviewScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.closeButton} onPress={() => router.back()}>
@@ -194,7 +194,7 @@ export default function PreviewScreen() {
           </Text>
         </Pressable>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
   },
   closeButton: {
     padding: 8,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
+    padding: SPACING.xl,
   },
   emptyContainer: {
     flex: 1,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: SPACING.md,
   },
   metaLabel: {
     fontSize: 14,
@@ -285,7 +285,9 @@ const styles = StyleSheet.create({
   },
   newButton: {
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    marginTop: SPACING.md,
   },
   newButtonText: {
     fontSize: 14,

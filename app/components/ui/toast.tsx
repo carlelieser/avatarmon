@@ -55,6 +55,10 @@ const TOAST_MARGIN = 8;
 const DYNAMIC_ISLAND_WIDTH = 126;
 const EXPANDED_WIDTH = screenWidth - 32;
 
+// iOS Dynamic Island standard colors
+const DYNAMIC_ISLAND_BG = '#1C1C1E';
+const DYNAMIC_ISLAND_MUTED = '#8E8E93';
+
 // Reanimated spring configuration
 const SPRING_CONFIG = {
   stiffness: 120,
@@ -83,8 +87,8 @@ export function Toast({
   const contentOpacity = useSharedValue(0);
 
   // Dynamic Island colors (dark theme optimized)
-  const backgroundColor = '#1C1C1E'; // iOS Dynamic Island background
-  const mutedTextColor = '#8E8E93'; // iOS secondary text color
+  const backgroundColor = DYNAMIC_ISLAND_BG;
+  const mutedTextColor = DYNAMIC_ISLAND_MUTED;
 
   useEffect(() => {
     const hasContentToShow = Boolean(title || description || action);

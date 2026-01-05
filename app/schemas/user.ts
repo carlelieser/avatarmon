@@ -21,5 +21,5 @@ export const UserStateSchema = z.object({
 export type UserState = z.infer<typeof UserStateSchema>;
 
 // Constants
-export const FREE_DAILY_LIMIT = 5;
+export const FREE_DAILY_LIMIT = 2;
 export const MAX_HISTORY_ITEMS = 50;

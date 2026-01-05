@@ -56,8 +56,6 @@ export function StyleCard({
 
   const cardStyle: ViewStyle = {
     backgroundColor,
-    borderColor,
-    borderWidth: selected ? 2 : 1,
   };
 
   const Icon = STYLE_ICONS[style];
@@ -71,7 +69,7 @@ export function StyleCard({
       accessibilityState={{ selected }}
       {...accessibilityProps}
     >
-      <Icon size={32} color={iconColor} strokeWidth={1.5} />
+      <Icon size={48} color={iconColor} strokeWidth={1.5} />
       <Text style={[styles.label, { color: textColor }]}>{label}</Text>
     </Pressable>
   );
@@ -110,7 +108,7 @@ export function StyleCardGrid({
 const styles = StyleSheet.create({
   card: {
     width: '48%',
-    aspectRatio: 1.2,
+    aspectRatio: 1,
     borderRadius: BORDER_RADIUS,
     padding: 16,
     alignItems: 'center',
@@ -130,5 +128,6 @@ const gridStyles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });

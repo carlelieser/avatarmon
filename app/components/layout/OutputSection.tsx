@@ -37,6 +37,7 @@ export function OutputSection({
         <View
           style={[
             styles.container,
+            styles.generatingContainer,
             {
               width: previewSize,
               height: previewSize,
@@ -119,6 +120,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  generatingContainer: {
+    overflow: 'visible',
+    padding: 24,
   },
   emptyState: {
     padding: 24,

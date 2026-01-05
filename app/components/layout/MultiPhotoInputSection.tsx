@@ -1,5 +1,7 @@
 import { useColor } from '@/hooks/useColor';
-import { BORDER_RADIUS, FONTS } from '@/theme/globals';
+import { BORDER_RADIUS, FONTS, GAP } from '@/theme/globals';
+
+const OVERLAY_COLOR = 'rgba(0,0,0,0.6)';
 import type { PhotoItem } from '@/schemas/avatar';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -150,7 +152,7 @@ export function MultiPhotoInputSection({
 
 const styles = StyleSheet.create({
   section: {
-    gap: 12,
+    gap: GAP.section,
   },
   headerRow: {
     flexDirection: 'row',
@@ -163,14 +165,14 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: GAP.section,
   },
   inputButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: GAP.button,
     paddingVertical: 16,
     borderRadius: BORDER_RADIUS,
     borderWidth: 1,
@@ -188,7 +190,7 @@ const styles = StyleSheet.create({
   },
   photoGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: GAP.grid,
   },
   photoItem: {
     width: 88,
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: OVERLAY_COLOR,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -216,7 +218,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     left: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: OVERLAY_COLOR,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,

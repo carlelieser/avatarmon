@@ -1,10 +1,15 @@
 import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useColor } from '@/hooks/useColor';
-import { BORDER_RADIUS } from '@/theme/globals';
+import { ANIMATION, BORDER_RADIUS, DISABLED_OPACITY } from '@/theme/globals';
 import { Check } from 'lucide-react-native';
 import React from 'react';
-import { TextStyle, TouchableOpacity } from 'react-native';
+import { Pressable, TextStyle } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 interface CheckboxProps {
   checked: boolean;
@@ -28,55 +33,77 @@ export function Checkbox({
   const danger = useColor('red');
   const borderColor = useColor('border');
 
+  const scale = useSharedValue(1);
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95, ANIMATION.pressIn);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, ANIMATION.pressOut);
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
-    <TouchableOpacity
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        opacity: disabled ? 0.5 : 1,
-        paddingVertical: 4,
-      }}
+    <Pressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       onPress={() => !disabled && onCheckedChange(!checked)}
       disabled={disabled}
     >
-      <View
-        style={{
-          width: BORDER_RADIUS,
-          height: BORDER_RADIUS,
-          borderRadius: BORDER_RADIUS,
-          borderWidth: 1.5,
-          borderColor: checked ? primary : borderColor,
-          backgroundColor: checked ? primary : 'transparent',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginRight: label ? 8 : 0,
-        }}
+      <Animated.View
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            opacity: disabled ? DISABLED_OPACITY : 1,
+            paddingVertical: 4,
+          },
+          animatedStyle,
+        ]}
       >
-        {checked && (
-          <Check
-            size={16}
-            color={primaryForegroundColor}
-            strokeWidth={3}
-            strokeLinecap='round'
-          />
-        )}
-      </View>
-      {label && (
-        <Text
-          variant='caption'
-          numberOfLines={1}
-          ellipsizeMode='tail'
-          style={[
-            {
-              color: error ? danger : primary,
-            },
-            labelStyle,
-          ]}
-          pointerEvents='none'
+        <View
+          style={{
+            width: BORDER_RADIUS,
+            height: BORDER_RADIUS,
+            borderRadius: BORDER_RADIUS,
+            borderWidth: 1.5,
+            borderColor: checked ? primary : borderColor,
+            backgroundColor: checked ? primary : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: label ? 8 : 0,
+          }}
         >
-          {label}
-        </Text>
-      )}
-    </TouchableOpacity>
+          {checked && (
+            <Check
+              size={16}
+              color={primaryForegroundColor}
+              strokeWidth={3}
+              strokeLinecap='round'
+            />
+          )}
+        </View>
+        {label && (
+          <Text
+            variant='caption'
+            numberOfLines={1}
+            ellipsizeMode='tail'
+            style={[
+              {
+                color: error ? danger : primary,
+              },
+              labelStyle,
+            ]}
+            pointerEvents='none'
+          >
+            {label}
+          </Text>
+        )}
+      </Animated.View>
+    </Pressable>
   );
 }

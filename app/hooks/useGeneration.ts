@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import * as FileSystem from 'expo-file-system';
+import { readAsStringAsync, EncodingType } from 'expo-file-system/legacy';
 import { useAvatarStore } from '@/store/avatar-store';
 import { api } from '@/lib/api';
 import { buildGenerationRequest } from '@/lib/replicate';
@@ -11,8 +11,8 @@ import type { PhotoItem } from '@/schemas/avatar';
 async function convertPhotosToBase64(photos: PhotoItem[]): Promise<string[]> {
   const base64Images: string[] = [];
   for (const photo of photos) {
-    const base64 = await FileSystem.readAsStringAsync(photo.uri, {
-      encoding: 'base64',
+    const base64 = await readAsStringAsync(photo.uri, {
+      encoding: EncodingType.Base64,
     });
     base64Images.push(`data:${photo.mimeType};base64,${base64}`);
   }
