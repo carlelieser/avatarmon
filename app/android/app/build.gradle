@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.lumina.avatarcreator'
+    namespace 'com.avatarmon.app'
     defaultConfig {
-        applicationId 'com.lumina.avatarcreator'
+        applicationId 'com.avatarmon.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

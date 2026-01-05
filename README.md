@@ -23,7 +23,12 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-EXPO_PUBLIC_API_URL=http://localhost:8081/api
+# Development
+EXPO_PUBLIC_API_URL=http://localhost:8082
+
+# Production (default if not set)
+# EXPO_PUBLIC_API_URL=https://api.avatarmon.com
+
 REPLICATE_API_TOKEN=your_replicate_api_token_here
 ```
 

@@ -8,7 +8,8 @@ export const GenerationRequestSchema = z.object({
   style: StyleEnum,
   aspectRatio: AspectRatioEnum,
   seed: z.number().int().positive().optional(),
-  sourceImageBase64: z.string().optional(),
+  sourceImageBase64: z.string().optional(), // Legacy single image
+  sourceImagesBase64: z.array(z.string()).min(1).max(3).optional(), // New: 1-3 images
 });
 
 // Generation job status

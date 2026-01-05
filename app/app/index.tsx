@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,56 +14,43 @@ import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { FloatingButton } from '@/components/ui/FloatingButton';
 import { OutputSection } from '@/components/layout/OutputSection';
-import { ImageInputSection } from '@/components/layout/ImageInputSection';
+import { MultiPhotoInputSection } from '@/components/layout/MultiPhotoInputSection';
 import { AvatarSettingsSection } from '@/components/layout/AvatarSettingsSection';
 import { SettingsSheet } from '@/components/layout/SettingsSheet';
 
-import type { BuilderSource } from '@/schemas/avatar';
+import type { StyleModifiers, PhotoItem } from '@/schemas/avatar';
 import type { Style } from '@/schemas/enums';
-
-const DEFAULT_BUILDER_FORM: Partial<BuilderSource> = {
-  type: 'builder',
-  gender: 'feminine',
-  ageRange: 'young-adult',
-  skinTone: 'medium',
-  hairStyle: 'medium',
-  hairColor: 'brown',
-  eyeColor: 'brown',
-  eyeShape: 'almond',
-  facialHair: 'none',
-  faceShape: 'oval',
-  accessories: [],
-  expression: 'smiling',
-};
 
 export default function MainScreen() {
   const backgroundColor = useColor('background');
   const textColor = useColor('text');
-  const iconColor = useColor('icon');
 
-  const { currentForm, setSource, setStyle, setBackground, canGenerate } = useAvatarStore();
+  const {
+    currentForm,
+    addPhoto,
+    removePhoto,
+    setStyle,
+    setBackground,
+    setStyleModifiers,
+    setAspectRatio: setStoreAspectRatio,
+    canGenerate,
+  } = useAvatarStore();
   const { generate, isGenerating, status, progress, previewUrl, error } = useGeneration();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [builderForm, setBuilderForm] = useState<Partial<BuilderSource>>(DEFAULT_BUILDER_FORM);
   const [backgroundType, setBackgroundType] = useState('solid');
   const [primaryColor, setPrimaryColor] = useState('#ffffff');
   const [secondaryColor, setSecondaryColor] = useState('#6366f1');
   const [aspectRatio, setAspectRatio] = useState('1:1');
 
-  // Initialize builder source on mount
-  useEffect(() => {
-    setSource(DEFAULT_BUILDER_FORM as BuilderSource);
-  }, []);
+  // Photos from store
+  const photos: PhotoItem[] = currentForm.photos ?? [];
 
-  const handlePhotoSelected = (asset: ImagePicker.ImagePickerAsset) => {
-    setPhotoUri(asset.uri);
+  const handlePhotoAdd = (asset: ImagePicker.ImagePickerAsset) => {
     const mimeType = asset.mimeType?.startsWith('image/')
       ? (asset.mimeType as 'image/jpeg' | 'image/png' | 'image/webp')
       : 'image/jpeg';
-    setSource({
-      type: 'photo',
+    addPhoto({
       uri: asset.uri,
       width: asset.width,
       height: asset.height,
@@ -71,21 +58,16 @@ export default function MainScreen() {
     });
   };
 
-  const handlePhotoClear = () => {
-    setPhotoUri(null);
-    setSource(builderForm as BuilderSource);
+  const handlePhotoRemove = (index: number) => {
+    removePhoto(index);
   };
 
   const handleStyleSelect = (style: Style) => {
     setStyle(style);
   };
 
-  const handleBuilderChange = (key: keyof BuilderSource, value: string) => {
-    const newForm = { ...builderForm, [key]: value };
-    setBuilderForm(newForm);
-    if (!photoUri) {
-      setSource(newForm as BuilderSource);
-    }
+  const handleModifierChange = (key: keyof StyleModifiers, value: string) => {
+    setStyleModifiers({ [key]: value });
   };
 
   const handleBackgroundChange = (value: string) => {
@@ -94,11 +76,7 @@ export default function MainScreen() {
   };
 
   const handleAccessoriesChange = (accessories: string[]) => {
-    const newForm = { ...builderForm, accessories: accessories as any };
-    setBuilderForm(newForm);
-    if (!photoUri) {
-      setSource(newForm as BuilderSource);
-    }
+    setStyleModifiers({ accessories: accessories as any });
   };
 
   const handlePrimaryColorChange = (color: string) => {
@@ -113,11 +91,17 @@ export default function MainScreen() {
 
   const handleAspectRatioChange = (value: string) => {
     setAspectRatio(value);
+    setStoreAspectRatio(value as any);
   };
 
   const handleGenerate = async () => {
     if (!canGenerate()) {
       Alert.alert('Daily Limit Reached', 'Upgrade to Premium for unlimited generations.');
+      return;
+    }
+
+    if (photos.length === 0) {
+      Alert.alert('Add a Photo', 'Please add at least one photo to generate an avatar.');
       return;
     }
 
@@ -140,13 +124,13 @@ export default function MainScreen() {
     }
   };
 
-  const isFormValid = currentForm.source && currentForm.style;
+  const isFormValid = photos.length > 0 && currentForm.style;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: textColor }]}>Lumina</Text>
+        <Text style={[styles.title, { color: textColor }]}>Avatarmon</Text>
         <Button
           variant="ghost"
           size="icon"
@@ -170,12 +154,12 @@ export default function MainScreen() {
           onPress={handleOutputPress}
         />
 
-        {/* Image Input */}
+        {/* Photo Input */}
         <View style={styles.section}>
-          <ImageInputSection
-            photoUri={photoUri}
-            onPhotoSelected={handlePhotoSelected}
-            onPhotoClear={handlePhotoClear}
+          <MultiPhotoInputSection
+            photos={photos}
+            onPhotoAdd={handlePhotoAdd}
+            onPhotoRemove={handlePhotoRemove}
           />
         </View>
 
@@ -184,8 +168,8 @@ export default function MainScreen() {
           <AvatarSettingsSection
             selectedStyle={currentForm.style || null}
             onStyleSelect={handleStyleSelect}
-            builderForm={builderForm}
-            onBuilderChange={handleBuilderChange}
+            styleModifiers={currentForm.styleModifiers}
+            onModifierChange={handleModifierChange}
             onAccessoriesChange={handleAccessoriesChange}
             backgroundType={backgroundType}
             onBackgroundChange={handleBackgroundChange}

@@ -21,7 +21,7 @@ export const HexColorSchema = z
   .string()
   .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color');
 
-// Photo source input
+// Photo source input (legacy - for backward compatibility)
 export const PhotoSourceSchema = z.object({
   type: z.literal('photo'),
   uri: z.string().min(1),
@@ -29,6 +29,17 @@ export const PhotoSourceSchema = z.object({
   height: z.number().min(256),
   mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
 });
+
+// Photo item (without type discriminator - for photos array)
+export const PhotoItemSchema = z.object({
+  uri: z.string().min(1),
+  width: z.number().min(256),
+  height: z.number().min(256),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+});
+
+// Required photos array (1-3 photos for better likeness)
+export const PhotosSchema = z.array(PhotoItemSchema).min(1).max(3);
 
 // Builder source input
 export const BuilderSourceSchema = z.object({
@@ -58,11 +69,19 @@ export const BuilderSourceSchema = z.object({
   accessories: z.array(AccessoryEnum).max(3).default([]),
 });
 
-// Combined source (discriminated union)
+// Combined source (discriminated union) - legacy for backward compatibility
 export const AvatarSourceSchema = z.discriminatedUnion('type', [
   PhotoSourceSchema,
   BuilderSourceSchema,
 ]);
+
+// Style modifiers (optional enhancements applied on top of photo-based avatars)
+export const StyleModifiersSchema = z.object({
+  hairColor: HairColorEnum.optional(),
+  expression: ExpressionEnum.optional(),
+  facialHair: FacialHairEnum.optional(),
+  accessories: z.array(AccessoryEnum).max(3).optional(),
+});
 
 // Background configuration
 export const BackgroundConfigSchema = z.object({
@@ -71,9 +90,10 @@ export const BackgroundConfigSchema = z.object({
   secondaryColor: HexColorSchema.optional(),
 });
 
-// Complete avatar form
+// Complete avatar form (updated: photos required, styleModifiers optional)
 export const AvatarFormSchema = z.object({
-  source: AvatarSourceSchema,
+  photos: PhotosSchema,
+  styleModifiers: StyleModifiersSchema.optional(),
   style: StyleEnum,
   background: BackgroundConfigSchema.default({ type: 'solid' }),
   aspectRatio: AspectRatioEnum.default('1:1'),
@@ -81,7 +101,9 @@ export const AvatarFormSchema = z.object({
 
 // Type exports
 export type PhotoSource = z.infer<typeof PhotoSourceSchema>;
+export type PhotoItem = z.infer<typeof PhotoItemSchema>;
 export type BuilderSource = z.infer<typeof BuilderSourceSchema>;
 export type AvatarSource = z.infer<typeof AvatarSourceSchema>;
+export type StyleModifiers = z.infer<typeof StyleModifiersSchema>;
 export type BackgroundConfig = z.infer<typeof BackgroundConfigSchema>;
 export type AvatarForm = z.infer<typeof AvatarFormSchema>;

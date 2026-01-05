@@ -1,9 +1,10 @@
 import {
   buildPromptFromBuilder,
   buildGenerationRequest,
+  buildModifierPrompt,
   STYLE_PROMPTS,
 } from '@/lib/replicate';
-import type { BuilderSource } from '@/schemas/avatar';
+import type { BuilderSource, StyleModifiers } from '@/schemas/avatar';
 import type { Style } from '@/schemas/enums';
 
 describe('buildPromptFromBuilder', () => {
@@ -102,6 +103,64 @@ describe('buildPromptFromBuilder', () => {
   });
 });
 
+describe('buildModifierPrompt', () => {
+  it('should return empty string for undefined modifiers', () => {
+    expect(buildModifierPrompt(undefined)).toBe('');
+  });
+
+  it('should return empty string for empty modifiers', () => {
+    expect(buildModifierPrompt({})).toBe('');
+  });
+
+  it('should include hair color when provided', () => {
+    const modifiers: StyleModifiers = { hairColor: 'blue' };
+    const prompt = buildModifierPrompt(modifiers);
+    expect(prompt).toContain('blue hair');
+  });
+
+  it('should include expression when provided', () => {
+    const modifiers: StyleModifiers = { expression: 'smiling' };
+    const prompt = buildModifierPrompt(modifiers);
+    expect(prompt).toContain('smiling expression');
+  });
+
+  it('should include facial hair when provided and not none', () => {
+    const modifiers: StyleModifiers = { facialHair: 'full-beard' };
+    const prompt = buildModifierPrompt(modifiers);
+    expect(prompt).toContain('full beard');
+  });
+
+  it('should NOT include facial hair when set to none', () => {
+    const modifiers: StyleModifiers = { facialHair: 'none' };
+    const prompt = buildModifierPrompt(modifiers);
+    expect(prompt).toBe('');
+  });
+
+  it('should include accessories when provided', () => {
+    const modifiers: StyleModifiers = { accessories: ['glasses', 'hat'] };
+    const prompt = buildModifierPrompt(modifiers);
+    expect(prompt).toContain('wearing glasses, hat');
+  });
+
+  it('should combine multiple modifiers', () => {
+    const modifiers: StyleModifiers = {
+      hairColor: 'pink',
+      expression: 'playful',
+      accessories: ['sunglasses'],
+    };
+    const prompt = buildModifierPrompt(modifiers);
+    expect(prompt).toContain('pink hair');
+    expect(prompt).toContain('playful expression');
+    expect(prompt).toContain('wearing sunglasses');
+  });
+
+  it('should handle hyphenated values correctly', () => {
+    const modifiers: StyleModifiers = { facialHair: 'short-beard' };
+    const prompt = buildModifierPrompt(modifiers);
+    expect(prompt).toContain('short beard');
+  });
+});
+
 describe('buildGenerationRequest', () => {
   const builderSource: BuilderSource = {
     type: 'builder',
@@ -166,6 +225,45 @@ describe('buildGenerationRequest', () => {
     expect(request.negativePrompt).toContain('ugly');
     expect(request.negativePrompt).toContain('blurry');
     expect(request.negativePrompt).toContain('low quality');
+  });
+
+  // New tests for updated buildGenerationRequest with multiple images
+  it('should accept sourceImagesBase64 array', () => {
+    const images = ['base64image1', 'base64image2'];
+    const request = buildGenerationRequest(
+      { type: 'photo' },
+      'anime',
+      '1:1',
+      images
+    );
+    expect(request.sourceImagesBase64).toEqual(images);
+  });
+
+  it('should include style modifiers in prompt when provided', () => {
+    const modifiers: StyleModifiers = {
+      hairColor: 'blue',
+      expression: 'smiling',
+    };
+    const request = buildGenerationRequest(
+      { type: 'photo' },
+      'anime',
+      '1:1',
+      ['base64image'],
+      modifiers
+    );
+    expect(request.prompt).toContain('blue hair');
+    expect(request.prompt).toContain('smiling expression');
+  });
+
+  it('should work without style modifiers', () => {
+    const request = buildGenerationRequest(
+      { type: 'photo' },
+      'pixar',
+      '4:3',
+      ['base64image']
+    );
+    expect(request.prompt).toContain('portrait transformation');
+    expect(request.sourceImagesBase64).toEqual(['base64image']);
   });
 });
 

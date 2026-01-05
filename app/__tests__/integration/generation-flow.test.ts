@@ -9,7 +9,7 @@ import { useAvatarStore } from '@/store/avatar-store';
 import { api } from '@/lib/api';
 import { buildGenerationRequest } from '@/lib/replicate';
 import { ErrorCodes, ErrorMessages } from '@/lib/errors';
-import type { BuilderSource, AvatarForm } from '@/schemas/avatar';
+import type { PhotoItem, AvatarForm } from '@/schemas/avatar';
 import type { GenerationResponse, GenerationRecord } from '@/schemas/api';
 
 // Mock the API
@@ -24,23 +24,15 @@ jest.mock('@/lib/api', () => ({
 const mockApi = api as jest.Mocked<typeof api>;
 
 describe('Avatar Generation Flow', () => {
-  const mockBuilderSource: BuilderSource = {
-    type: 'builder',
-    gender: 'feminine',
-    ageRange: 'young-adult',
-    skinTone: 'medium',
-    hairStyle: 'long',
-    hairColor: 'brown',
-    eyeColor: 'brown',
-    eyeShape: 'almond',
-    facialHair: 'none',
-    faceShape: 'oval',
-    accessories: [],
-    expression: 'smiling',
+  const mockPhoto: PhotoItem = {
+    uri: 'file://photo.jpg',
+    width: 512,
+    height: 512,
+    mimeType: 'image/jpeg',
   };
 
   const mockForm: AvatarForm = {
-    source: mockBuilderSource,
+    photos: [mockPhoto],
     style: 'anime',
     background: { type: 'solid', primaryColor: '#ffffff' },
     aspectRatio: '1:1',
@@ -87,21 +79,23 @@ describe('Avatar Generation Flow', () => {
       const store = useAvatarStore.getState();
 
       // Step 1: Set form values
-      store.setSource(mockBuilderSource);
+      store.addPhoto(mockPhoto);
       store.setStyle('anime');
       store.setBackground({ type: 'solid', primaryColor: '#ffffff' });
       store.setAspectRatio('1:1');
 
       // Step 2: Verify form is valid
       const form = useAvatarStore.getState().currentForm;
-      expect(form.source).toBeDefined();
+      expect(form.photos).toBeDefined();
+      expect(form.photos?.length).toBe(1);
       expect(form.style).toBe('anime');
 
-      // Step 3: Build request
+      // Step 3: Build request (photo source with mock base64)
       const request = buildGenerationRequest(
-        mockBuilderSource,
+        { type: 'photo' },
         'anime',
-        '1:1'
+        '1:1',
+        ['base64mockimage']
       );
       expect(request.prompt).toContain('anime');
 

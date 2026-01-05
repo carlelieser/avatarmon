@@ -1,10 +1,23 @@
 import { useCallback, useRef } from 'react';
+import * as FileSystem from 'expo-file-system';
 import { useAvatarStore } from '@/store/avatar-store';
 import { api } from '@/lib/api';
 import { buildGenerationRequest } from '@/lib/replicate';
 import { AppError, ErrorCodes, ErrorMessages } from '@/lib/errors';
 import { AvatarFormSchema } from '@/schemas/avatar';
 import type { GenerationStatus } from '@/schemas/api';
+import type { PhotoItem } from '@/schemas/avatar';
+
+async function convertPhotosToBase64(photos: PhotoItem[]): Promise<string[]> {
+  const base64Images: string[] = [];
+  for (const photo of photos) {
+    const base64 = await FileSystem.readAsStringAsync(photo.uri, {
+      encoding: 'base64',
+    });
+    base64Images.push(`data:${photo.mimeType};base64,${base64}`);
+  }
+  return base64Images;
+}
 
 const POLL_INTERVAL = 2000;
 const GENERATION_TIMEOUT = 5 * 60 * 1000;
@@ -129,11 +142,15 @@ export function useGeneration(): UseGenerationResult {
     console.log('[Generate] Form validated, building request...');
 
     try {
+      console.log('[Generate] Converting photos to base64...');
+      const base64Images = await convertPhotosToBase64(form.photos);
       console.log('[Generate] Building generation request...');
       const request = buildGenerationRequest(
-        form.source,
+        { type: 'photo' },
         form.style,
-        form.aspectRatio
+        form.aspectRatio,
+        base64Images,
+        form.styleModifiers
       );
       console.log('[Generate] Request built, calling API...');
 

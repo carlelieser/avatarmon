@@ -9,17 +9,8 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
-const MODEL_ID = 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
-
-function getImageDimensions(aspectRatio: string): { width: number; height: number } {
-  const dimensions: Record<string, { width: number; height: number }> = {
-    '1:1': { width: 1024, height: 1024 },
-    '3:4': { width: 768, height: 1024 },
-    '4:3': { width: 1024, height: 768 },
-    '9:16': { width: 576, height: 1024 },
-  };
-  return dimensions[aspectRatio] || dimensions['1:1'];
-}
+// FLUX Kontext multi-image model
+const MODEL_ID = 'flux-kontext-apps/multi-image-list:02f073c63abec2c72f0638164a25a64bd0ca70bce780c0ac75c6851252bb4c70';
 
 function mapReplicateStatus(status: string): GenerationStatus {
   const statusMap: Record<string, GenerationStatus> = {
@@ -60,25 +51,31 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    const { prompt, negativePrompt, aspectRatio, sourceImageBase64 } = parseResult.data;
-    const { width, height } = getImageDimensions(aspectRatio);
+    const { prompt, negativePrompt, aspectRatio, sourceImageBase64, sourceImagesBase64, seed } =
+      parseResult.data;
 
+    // Get images: prefer new array format, fall back to legacy single image
+    const images = sourceImagesBase64 || (sourceImageBase64 ? [sourceImageBase64] : []);
+
+    if (images.length === 0) {
+      res.status(400).json({
+        error: 'No images provided',
+        details: 'At least one source image is required',
+      });
+      return;
+    }
+
+    // Build input for FLUX Kontext model
     const input: Record<string, unknown> = {
-      prompt,
-      negative_prompt: negativePrompt || '',
-      width,
-      height,
-      num_outputs: 1,
-      scheduler: 'K_EULER',
-      num_inference_steps: 30,
-      guidance_scale: 7.5,
-      refine: 'expert_ensemble_refiner',
-      high_noise_frac: 0.8,
+      prompt: `${prompt}${negativePrompt ? `. Avoid: ${negativePrompt}` : ''}`,
+      input_images: images,
+      aspect_ratio: aspectRatio,
+      output_format: 'png',
+      safety_tolerance: 2,
     };
 
-    if (sourceImageBase64) {
-      input.image = sourceImageBase64;
-      input.prompt_strength = 0.8;
+    if (seed) {
+      input.seed = seed;
     }
 
     const prediction = await replicate.predictions.create({

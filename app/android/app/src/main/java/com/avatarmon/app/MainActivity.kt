@@ -1,4 +1,4 @@
-package com.lumina.avatarcreator
+package com.avatarmon.app
 
 import android.os.Build
 import android.os.Bundle

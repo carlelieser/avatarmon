@@ -3,13 +3,16 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   AvatarForm,
-  AvatarSource,
   BackgroundConfig,
+  PhotoItem,
+  StyleModifiers,
 } from '@/schemas/avatar';
 import type { GenerationRecord, GenerationStatus } from '@/schemas/api';
 import type { UserState } from '@/schemas/user';
 import { FREE_DAILY_LIMIT, MAX_HISTORY_ITEMS } from '@/schemas/user';
 import type { Style, AspectRatio } from '@/schemas/enums';
+
+const MAX_PHOTOS = 3;
 
 interface AvatarState {
   // Form state (transient)
@@ -25,8 +28,15 @@ interface AvatarState {
   // User state (persisted)
   user: UserState;
 
+  // Actions - Photos
+  addPhoto: (photo: PhotoItem) => void;
+  removePhoto: (index: number) => void;
+
+  // Actions - Style Modifiers
+  setStyleModifiers: (modifiers: Partial<StyleModifiers>) => void;
+  clearStyleModifiers: () => void;
+
   // Actions - Form
-  setSource: (source: AvatarSource) => void;
   setStyle: (style: Style) => void;
   setBackground: (config: BackgroundConfig) => void;
   setAspectRatio: (ratio: AspectRatio) => void;
@@ -73,12 +83,56 @@ export const useAvatarStore = create<AvatarState>()(
       previewUrl: null,
       user: initialUserState,
 
-      // Form actions
-      setSource: (source) =>
+      // Photo actions
+      addPhoto: (photo) =>
+        set((state) => {
+          const currentPhotos = state.currentForm.photos || [];
+          if (currentPhotos.length >= MAX_PHOTOS) {
+            return state; // Don't add if at max
+          }
+          return {
+            currentForm: {
+              ...state.currentForm,
+              photos: [...currentPhotos, photo],
+            },
+          };
+        }),
+
+      removePhoto: (index) =>
+        set((state) => {
+          const currentPhotos = state.currentForm.photos || [];
+          if (index < 0 || index >= currentPhotos.length) {
+            return state; // Invalid index
+          }
+          return {
+            currentForm: {
+              ...state.currentForm,
+              photos: currentPhotos.filter((_, i) => i !== index),
+            },
+          };
+        }),
+
+      // Style modifier actions
+      setStyleModifiers: (modifiers) =>
         set((state) => ({
-          currentForm: { ...state.currentForm, source },
+          currentForm: {
+            ...state.currentForm,
+            styleModifiers: {
+              ...state.currentForm.styleModifiers,
+              ...modifiers,
+            },
+          },
         })),
 
+      clearStyleModifiers: () =>
+        set((state) => ({
+          currentForm: {
+            ...state.currentForm,
+            styleModifiers: undefined,
+          },
+        })),
+
+      // Form actions
       setStyle: (style) =>
         set((state) => ({
           currentForm: { ...state.currentForm, style },

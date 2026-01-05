@@ -333,7 +333,7 @@ export function SettingsSheet({ open, onClose }: SettingsSheetProps) {
             {/* Footer */}
             <View style={styles.footer}>
               <Text style={[styles.version, { color: mutedColor }]}>
-                Lumina v1.0.0
+                Avatarmon v1.0.0
               </Text>
             </View>
           </ScrollView>

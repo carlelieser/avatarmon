@@ -9,7 +9,7 @@ import { useAvatarStore } from '@/store/avatar-store';
 import { api } from '@/lib/api';
 import { buildGenerationRequest } from '@/lib/replicate';
 import { AppError, ErrorCodes, ErrorMessages } from '@/lib/errors';
-import type { AvatarForm, BuilderSource } from '@/schemas/avatar';
+import type { AvatarForm, PhotoItem } from '@/schemas/avatar';
 import type { GenerationResponse } from '@/schemas/api';
 
 // Mock the API module
@@ -37,8 +37,14 @@ async function executeGeneration(
     return { success: false, error: ErrorMessages[ErrorCodes.DAILY_LIMIT_REACHED] };
   }
 
-  // Build request
-  const request = buildGenerationRequest(form.source, form.style, form.aspectRatio);
+  // Build request - use photos with mock base64 data
+  const request = buildGenerationRequest(
+    { type: 'photo' },
+    form.style,
+    form.aspectRatio,
+    ['base64mockimage'], // Mock base64 image data
+    form.styleModifiers
+  );
 
   try {
     // Start generation
@@ -78,23 +84,15 @@ async function executeGeneration(
 }
 
 describe('useGeneration', () => {
-  const mockBuilderSource: BuilderSource = {
-    type: 'builder',
-    gender: 'feminine',
-    ageRange: 'young-adult',
-    skinTone: 'medium',
-    hairStyle: 'long',
-    hairColor: 'brown',
-    eyeColor: 'brown',
-    eyeShape: 'almond',
-    facialHair: 'none',
-    faceShape: 'oval',
-    accessories: [],
-    expression: 'smiling',
+  const mockPhoto: PhotoItem = {
+    uri: 'file://photo.jpg',
+    width: 512,
+    height: 512,
+    mimeType: 'image/jpeg',
   };
 
   const mockForm: AvatarForm = {
-    source: mockBuilderSource,
+    photos: [mockPhoto],
     style: 'anime',
     background: { type: 'solid', primaryColor: '#ffffff' },
     aspectRatio: '1:1',
@@ -315,15 +313,14 @@ describe('useGeneration', () => {
   });
 
   describe('Prompt Building', () => {
-    it('should build correct prompt from builder source', async () => {
+    it('should build correct prompt from photo source', async () => {
       mockApi.generate.mockResolvedValue(mockGenerationResponse);
       mockApi.getStatus.mockResolvedValue(mockCompletedResponse);
 
       await executeGeneration(mockForm);
 
       const call = mockApi.generate.mock.calls[0][0];
-      expect(call.prompt).toContain('portrait');
-      expect(call.prompt).toContain('feminine');
+      expect(call.prompt).toContain('portrait transformation');
       expect(call.prompt).toContain('anime');
     });
 

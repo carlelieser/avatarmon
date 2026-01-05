@@ -1,4 +1,4 @@
 export { OutputSection } from './OutputSection';
-export { ImageInputSection } from './ImageInputSection';
+export { MultiPhotoInputSection } from './MultiPhotoInputSection';
 export { AvatarSettingsSection } from './AvatarSettingsSection';
 export { SettingsSheet } from './SettingsSheet';

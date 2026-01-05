@@ -1,6 +1,6 @@
 import type { GenerationRequest, GenerationResponse } from '@/schemas/api';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://api.avatarmon.com';
 
 console.log('[Client] API_BASE:', API_BASE);
 

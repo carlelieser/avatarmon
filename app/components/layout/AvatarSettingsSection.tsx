@@ -11,7 +11,7 @@ import Animated, {
 import { Text } from '@/components/ui/text';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AttributeSelect, ColorPicker, StyleCardGrid } from '@/components/avatar';
-import type { BuilderSource } from '@/schemas/avatar';
+import type { StyleModifiers } from '@/schemas/avatar';
 import type { Style } from '@/schemas/enums';
 
 // Background color presets
@@ -43,57 +43,7 @@ const STYLES: Array<{ style: Style; label: string }> = [
   { style: 'fantasy', label: 'Fantasy' },
 ];
 
-const GENDER_OPTIONS = [
-  { value: 'masculine', label: 'Masculine' },
-  { value: 'feminine', label: 'Feminine' },
-  { value: 'androgynous', label: 'Androgynous' },
-];
-
-const AGE_OPTIONS = [
-  { value: 'child', label: 'Child' },
-  { value: 'teen', label: 'Teen' },
-  { value: 'young-adult', label: 'Young Adult' },
-  { value: 'adult', label: 'Adult' },
-  { value: 'middle-aged', label: 'Middle-aged' },
-  { value: 'elder', label: 'Elder' },
-];
-
-const FACE_SHAPE_OPTIONS = [
-  { value: 'oval', label: 'Oval' },
-  { value: 'round', label: 'Round' },
-  { value: 'square', label: 'Square' },
-  { value: 'heart', label: 'Heart' },
-  { value: 'oblong', label: 'Oblong' },
-  { value: 'diamond', label: 'Diamond' },
-];
-
-// Skin tone options with hex values for ColorPicker
-const SKIN_TONE_OPTIONS = [
-  { color: '#fdeef0', label: 'Porcelain', value: 'porcelain' },
-  { color: '#fde7d6', label: 'Fair', value: 'fair' },
-  { color: '#f5d6ba', label: 'Light', value: 'light' },
-  { color: '#deb887', label: 'Medium', value: 'medium' },
-  { color: '#c4a77d', label: 'Olive', value: 'olive' },
-  { color: '#b8860b', label: 'Tan', value: 'tan' },
-  { color: '#8b6914', label: 'Brown', value: 'brown' },
-  { color: '#5c4033', label: 'Dark', value: 'dark' },
-  { color: '#3d2817', label: 'Deep', value: 'deep' },
-];
-
-const HAIR_STYLE_OPTIONS = [
-  { value: 'bald', label: 'Bald' },
-  { value: 'buzzcut', label: 'Buzzcut' },
-  { value: 'short', label: 'Short' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'long', label: 'Long' },
-  { value: 'curly', label: 'Curly' },
-  { value: 'wavy', label: 'Wavy' },
-  { value: 'ponytail', label: 'Ponytail' },
-  { value: 'bun', label: 'Bun' },
-  { value: 'braided', label: 'Braided' },
-];
-
-// Hair color options with hex values for ColorPicker
+// Hair color options with hex values for ColorPicker (includes fantasy colors)
 const HAIR_COLOR_OPTIONS = [
   { color: '#1a1a1a', label: 'Black', value: 'black' },
   { color: '#3d2314', label: 'Dark Brown', value: 'dark-brown' },
@@ -110,27 +60,6 @@ const HAIR_COLOR_OPTIONS = [
   { color: '#ff69b4', label: 'Pink', value: 'pink' },
   { color: '#9b59b6', label: 'Purple', value: 'purple' },
   { color: '#2ecc71', label: 'Green', value: 'green' },
-];
-
-// Eye color options with hex values for ColorPicker
-const EYE_COLOR_OPTIONS = [
-  { color: '#634e34', label: 'Brown', value: 'brown' },
-  { color: '#4a3728', label: 'Dark Brown', value: 'dark-brown' },
-  { color: '#8b7355', label: 'Hazel', value: 'hazel' },
-  { color: '#d4a017', label: 'Amber', value: 'amber' },
-  { color: '#3d9970', label: 'Green', value: 'green' },
-  { color: '#4682b4', label: 'Blue', value: 'blue' },
-  { color: '#708090', label: 'Gray', value: 'gray' },
-  { color: '#8b5cf6', label: 'Violet', value: 'violet' },
-];
-
-const EYE_SHAPE_OPTIONS = [
-  { value: 'almond', label: 'Almond' },
-  { value: 'round', label: 'Round' },
-  { value: 'hooded', label: 'Hooded' },
-  { value: 'monolid', label: 'Monolid' },
-  { value: 'upturned', label: 'Upturned' },
-  { value: 'downturned', label: 'Downturned' },
 ];
 
 const EXPRESSION_OPTIONS = [
@@ -226,8 +155,8 @@ function Category({ title, children, defaultExpanded = false }: CategoryProps) {
 interface AvatarSettingsSectionProps {
   selectedStyle: Style | null;
   onStyleSelect: (style: Style) => void;
-  builderForm: Partial<BuilderSource>;
-  onBuilderChange: (key: keyof BuilderSource, value: string) => void;
+  styleModifiers?: Partial<StyleModifiers>;
+  onModifierChange: (key: keyof StyleModifiers, value: string) => void;
   onAccessoriesChange: (accessories: string[]) => void;
   backgroundType: string;
   onBackgroundChange: (value: string) => void;
@@ -242,8 +171,8 @@ interface AvatarSettingsSectionProps {
 export function AvatarSettingsSection({
   selectedStyle,
   onStyleSelect,
-  builderForm,
-  onBuilderChange,
+  styleModifiers,
+  onModifierChange,
   onAccessoriesChange,
   backgroundType,
   onBackgroundChange,
@@ -269,64 +198,27 @@ export function AvatarSettingsSection({
         />
       </View>
 
-      {/* Face Category */}
-      <Category title="Face" defaultExpanded>
-        <AttributeSelect
-          label="Gender"
-          options={GENDER_OPTIONS}
-          value={builderForm.gender || 'feminine'}
-          onChange={(v) => onBuilderChange('gender', v)}
-        />
-        <AttributeSelect
-          label="Age"
-          options={AGE_OPTIONS}
-          value={builderForm.ageRange || 'young-adult'}
-          onChange={(v) => onBuilderChange('ageRange', v)}
-        />
-        <AttributeSelect
-          label="Face Shape"
-          options={FACE_SHAPE_OPTIONS}
-          value={builderForm.faceShape || 'oval'}
-          onChange={(v) => onBuilderChange('faceShape', v)}
-        />
-        <ColorPicker
-          label="Skin Tone"
-          colors={SKIN_TONE_OPTIONS}
-          selectedColor={builderForm.skinTone || 'medium'}
-          onColorSelect={(v) => onBuilderChange('skinTone', v)}
-        />
-      </Category>
+      {/* Style Suggestions Header */}
+      <View style={styles.modifiersHeader}>
+        <Text style={[styles.sectionTitle, { color: textColor }]}>
+          Style Suggestions
+        </Text>
+        <Text style={[styles.optionalLabel, { color: mutedColor }]}>
+          Optional
+        </Text>
+      </View>
 
-      {/* Hair Category */}
-      <Category title="Hair">
-        <AttributeSelect
-          label="Style"
-          options={HAIR_STYLE_OPTIONS}
-          value={builderForm.hairStyle || 'medium'}
-          onChange={(v) => onBuilderChange('hairStyle', v)}
-        />
+      {/* Hair Color - For fantasy colors */}
+      <Category title="Hair Color">
         <ColorPicker
           label="Color"
           colors={HAIR_COLOR_OPTIONS}
-          selectedColor={builderForm.hairColor || 'brown'}
-          onColorSelect={(v) => onBuilderChange('hairColor', v)}
+          selectedColor={styleModifiers?.hairColor ?? ''}
+          onColorSelect={(v) => onModifierChange('hairColor', v)}
         />
-      </Category>
-
-      {/* Eyes Category */}
-      <Category title="Eyes">
-        <ColorPicker
-          label="Color"
-          colors={EYE_COLOR_OPTIONS}
-          selectedColor={builderForm.eyeColor || 'brown'}
-          onColorSelect={(v) => onBuilderChange('eyeColor', v)}
-        />
-        <AttributeSelect
-          label="Shape"
-          options={EYE_SHAPE_OPTIONS}
-          value={builderForm.eyeShape || 'almond'}
-          onChange={(v) => onBuilderChange('eyeShape', v)}
-        />
+        <Text style={[styles.modifierHint, { color: mutedColor }]}>
+          Override natural hair color (e.g., for fantasy colors)
+        </Text>
       </Category>
 
       {/* Expression Category */}
@@ -334,14 +226,14 @@ export function AvatarSettingsSection({
         <AttributeSelect
           label="Expression"
           options={EXPRESSION_OPTIONS}
-          value={builderForm.expression || 'smiling'}
-          onChange={(v) => onBuilderChange('expression', v)}
+          value={styleModifiers?.expression ?? ''}
+          onChange={(v) => onModifierChange('expression', v)}
         />
         <AttributeSelect
           label="Facial Hair"
           options={FACIAL_HAIR_OPTIONS}
-          value={builderForm.facialHair || 'none'}
-          onChange={(v) => onBuilderChange('facialHair', v)}
+          value={styleModifiers?.facialHair ?? ''}
+          onChange={(v) => onModifierChange('facialHair', v)}
         />
       </Category>
 
@@ -349,8 +241,8 @@ export function AvatarSettingsSection({
       <Category title="Accessories">
         <View style={styles.accessoriesGrid}>
           {ACCESSORY_OPTIONS.map((option) => {
-            const isSelected = builderForm.accessories?.includes(option.value as any) ?? false;
-            const currentAccessories = builderForm.accessories ?? [];
+            const isSelected = styleModifiers?.accessories?.includes(option.value as any) ?? false;
+            const currentAccessories = styleModifiers?.accessories ?? [];
             return (
               <View key={option.value} style={styles.accessoryItem}>
                 <Checkbox
@@ -426,6 +318,20 @@ const styles = StyleSheet.create({
   },
   styleSection: {
     marginBottom: 8,
+  },
+  modifiersHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  optionalLabel: {
+    fontSize: 13,
+    fontFamily: FONTS.regular,
+  },
+  modifierHint: {
+    fontSize: 12,
+    marginTop: 8,
   },
   category: {
     borderRadius: BORDER_RADIUS,

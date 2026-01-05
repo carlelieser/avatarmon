@@ -1,5 +1,5 @@
 import type { Style } from '@/schemas/enums';
-import type { BuilderSource } from '@/schemas/avatar';
+import type { BuilderSource, StyleModifiers } from '@/schemas/avatar';
 import type { GenerationRequest } from '@/schemas/api';
 
 export const STYLE_PROMPTS: Record<Style, { positive: string; negative: string }> = {
@@ -69,17 +69,47 @@ export function buildPromptFromBuilder(source: BuilderSource): string {
   return descriptors.join(', ');
 }
 
+export function buildModifierPrompt(modifiers?: StyleModifiers): string {
+  if (!modifiers) return '';
+
+  const parts: string[] = [];
+
+  if (modifiers.hairColor) {
+    parts.push(`${modifiers.hairColor} hair`);
+  }
+
+  if (modifiers.expression) {
+    parts.push(`${modifiers.expression} expression`);
+  }
+
+  if (modifiers.facialHair && modifiers.facialHair !== 'none') {
+    parts.push(modifiers.facialHair.replace(/-/g, ' '));
+  }
+
+  if (modifiers.accessories && modifiers.accessories.length > 0) {
+    parts.push(`wearing ${modifiers.accessories.join(', ')}`);
+  }
+
+  return parts.join(', ');
+}
+
 export function buildGenerationRequest(
   source: BuilderSource | { type: 'photo' },
   style: Style,
   aspectRatio: string,
-  sourceImageBase64?: string
+  sourceImages?: string | string[],
+  modifiers?: StyleModifiers
 ): GenerationRequest {
   const styleConfig = STYLE_PROMPTS[style];
 
   let basePrompt: string;
   if (source.type === 'photo') {
-    basePrompt = 'portrait transformation';
+    basePrompt = 'portrait transformation, preserve facial features and likeness';
+    // Add modifier prompt if provided
+    const modifierPrompt = buildModifierPrompt(modifiers);
+    if (modifierPrompt) {
+      basePrompt += `, ${modifierPrompt}`;
+    }
   } else {
     basePrompt = buildPromptFromBuilder(source);
   }
@@ -91,8 +121,14 @@ export function buildGenerationRequest(
     aspectRatio: aspectRatio as GenerationRequest['aspectRatio'],
   };
 
-  if (sourceImageBase64) {
-    request.sourceImageBase64 = sourceImageBase64;
+  // Handle both string and array for backward compatibility
+  if (sourceImages) {
+    if (Array.isArray(sourceImages)) {
+      request.sourceImagesBase64 = sourceImages;
+    } else {
+      // Legacy single image support
+      request.sourceImageBase64 = sourceImages;
+    }
   }
 
   return request;

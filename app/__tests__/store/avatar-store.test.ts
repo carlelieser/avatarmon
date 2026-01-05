@@ -1,7 +1,28 @@
 import { useAvatarStore } from '@/store/avatar-store';
-import type { BuilderSource } from '@/schemas/avatar';
+import type { BuilderSource, PhotoItem, StyleModifiers } from '@/schemas/avatar';
 import type { GenerationRecord } from '@/schemas/api';
 import { FREE_DAILY_LIMIT, MAX_HISTORY_ITEMS } from '@/schemas/user';
+
+const validPhoto: PhotoItem = {
+  uri: 'file://photo.jpg',
+  width: 512,
+  height: 512,
+  mimeType: 'image/jpeg',
+};
+
+const validPhoto2: PhotoItem = {
+  uri: 'file://photo2.jpg',
+  width: 600,
+  height: 600,
+  mimeType: 'image/png',
+};
+
+const validPhoto3: PhotoItem = {
+  uri: 'file://photo3.jpg',
+  width: 800,
+  height: 800,
+  mimeType: 'image/webp',
+};
 
 // Reset store before each test
 beforeEach(() => {
@@ -23,27 +44,6 @@ beforeEach(() => {
 
 describe('useAvatarStore', () => {
   describe('Form Actions', () => {
-    it('should set source', () => {
-      const source: BuilderSource = {
-        type: 'builder',
-        gender: 'masculine',
-        ageRange: 'young-adult',
-        faceShape: 'oval',
-        skinTone: 'medium',
-        hairStyle: 'short',
-        hairColor: 'brown',
-        eyeColor: 'brown',
-        eyeShape: 'almond',
-        facialHair: 'none',
-        expression: 'neutral',
-        accessories: [],
-      };
-
-      useAvatarStore.getState().setSource(source);
-
-      expect(useAvatarStore.getState().currentForm.source).toEqual(source);
-    });
-
     it('should set style', () => {
       useAvatarStore.getState().setStyle('anime');
 
@@ -71,6 +71,111 @@ describe('useAvatarStore', () => {
       useAvatarStore.getState().resetForm();
 
       expect(useAvatarStore.getState().currentForm).toEqual({});
+    });
+  });
+
+  describe('Photo Actions', () => {
+    it('should add photo to empty photos array', () => {
+      useAvatarStore.getState().addPhoto(validPhoto);
+
+      expect(useAvatarStore.getState().currentForm.photos).toHaveLength(1);
+      expect(useAvatarStore.getState().currentForm.photos?.[0]).toEqual(validPhoto);
+    });
+
+    it('should add multiple photos', () => {
+      useAvatarStore.getState().addPhoto(validPhoto);
+      useAvatarStore.getState().addPhoto(validPhoto2);
+
+      expect(useAvatarStore.getState().currentForm.photos).toHaveLength(2);
+    });
+
+    it('should not add more than 3 photos', () => {
+      useAvatarStore.getState().addPhoto(validPhoto);
+      useAvatarStore.getState().addPhoto(validPhoto2);
+      useAvatarStore.getState().addPhoto(validPhoto3);
+      useAvatarStore.getState().addPhoto({
+        ...validPhoto,
+        uri: 'file://photo4.jpg',
+      });
+
+      expect(useAvatarStore.getState().currentForm.photos).toHaveLength(3);
+    });
+
+    it('should remove photo by index', () => {
+      useAvatarStore.getState().addPhoto(validPhoto);
+      useAvatarStore.getState().addPhoto(validPhoto2);
+
+      useAvatarStore.getState().removePhoto(0);
+
+      const photos = useAvatarStore.getState().currentForm.photos;
+      expect(photos).toHaveLength(1);
+      expect(photos?.[0]).toEqual(validPhoto2);
+    });
+
+    it('should handle removing from empty array', () => {
+      useAvatarStore.getState().removePhoto(0);
+
+      // Photos is undefined when no photos have been added
+      expect(useAvatarStore.getState().currentForm.photos).toBeUndefined();
+    });
+
+    it('should handle invalid index', () => {
+      useAvatarStore.getState().addPhoto(validPhoto);
+
+      useAvatarStore.getState().removePhoto(5);
+
+      expect(useAvatarStore.getState().currentForm.photos).toHaveLength(1);
+    });
+  });
+
+  describe('Style Modifiers Actions', () => {
+    it('should set style modifiers', () => {
+      const modifiers: Partial<StyleModifiers> = { hairColor: 'blue' };
+
+      useAvatarStore.getState().setStyleModifiers(modifiers);
+
+      expect(useAvatarStore.getState().currentForm.styleModifiers?.hairColor).toBe(
+        'blue'
+      );
+    });
+
+    it('should merge style modifiers', () => {
+      useAvatarStore.getState().setStyleModifiers({ hairColor: 'blue' });
+      useAvatarStore.getState().setStyleModifiers({ expression: 'smiling' });
+
+      const modifiers = useAvatarStore.getState().currentForm.styleModifiers;
+      expect(modifiers?.hairColor).toBe('blue');
+      expect(modifiers?.expression).toBe('smiling');
+    });
+
+    it('should override existing modifier values', () => {
+      useAvatarStore.getState().setStyleModifiers({ hairColor: 'blue' });
+      useAvatarStore.getState().setStyleModifiers({ hairColor: 'pink' });
+
+      expect(useAvatarStore.getState().currentForm.styleModifiers?.hairColor).toBe(
+        'pink'
+      );
+    });
+
+    it('should set accessories array', () => {
+      useAvatarStore.getState().setStyleModifiers({
+        accessories: ['glasses', 'hat'],
+      });
+
+      expect(useAvatarStore.getState().currentForm.styleModifiers?.accessories).toEqual(
+        ['glasses', 'hat']
+      );
+    });
+
+    it('should clear style modifiers', () => {
+      useAvatarStore.getState().setStyleModifiers({
+        hairColor: 'blue',
+        expression: 'smiling',
+      });
+
+      useAvatarStore.getState().clearStyleModifiers();
+
+      expect(useAvatarStore.getState().currentForm.styleModifiers).toBeUndefined();
     });
   });
 
