@@ -50,6 +50,7 @@ export function useGeneration(): UseGenerationResult {
   const clearGeneration = useAvatarStore((state) => state.clearGeneration);
   const canGenerate = useAvatarStore((state) => state.canGenerate);
   const incrementDailyUsage = useAvatarStore((state) => state.incrementDailyUsage);
+  const saveToHistory = useAvatarStore((state) => state.saveToHistory);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {

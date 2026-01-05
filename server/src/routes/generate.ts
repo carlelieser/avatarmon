@@ -12,6 +12,10 @@ const replicate = new Replicate({
 // FLUX Kontext multi-image model
 const MODEL_ID = 'flux-kontext-apps/multi-image-list:02f073c63abec2c72f0638164a25a64bd0ca70bce780c0ac75c6851252bb4c70';
 
+// Prompt modifiers - customize the generation style
+const PROMPT_PREFIX = 'Portrait transformation of the person in the reference photos: ';
+const PROMPT_SUFFIX = ', preserve facial likeness, high quality, detailed';
+
 function mapReplicateStatus(status: string): GenerationStatus {
   const statusMap: Record<string, GenerationStatus> = {
     starting: 'queued',
@@ -67,7 +71,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Build input for FLUX Kontext model
     const input: Record<string, unknown> = {
-      prompt: `${prompt}${negativePrompt ? `. Avoid: ${negativePrompt}` : ''}`,
+      prompt: `${PROMPT_PREFIX}${prompt}${negativePrompt ? `. Avoid: ${negativePrompt}` : ''}${PROMPT_SUFFIX}`,
       input_images: images,
       aspect_ratio: aspectRatio,
       output_format: 'png',

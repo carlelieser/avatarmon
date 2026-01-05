@@ -282,6 +282,9 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 16,
     fontFamily: FONTS.semiBold,
+    lineHeight: 20,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   newButton: {
     alignItems: 'center',
