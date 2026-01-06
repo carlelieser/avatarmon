@@ -1,1 +1,0 @@
-export { Paywall } from './Paywall';
