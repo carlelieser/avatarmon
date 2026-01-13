@@ -20,25 +20,53 @@ router.post('/', async (req: Request, res: Response) => {
 
     const prompt = [prompts[style], ...modifications].join(', ');
 
-    const prediction = await replicate.predictions.create({
-        model: process.env.REPLICATE_MODEL_ID!,
-        input: {
-            prompt,
-            input_images: references,
-        },
-    });
+    try {
+        const prediction = await replicate.predictions.create({
+            model: process.env.REPLICATE_MODEL_ID!,
+            input: {
+                prompt,
+                input_images: references,
+            },
+        });
 
-    res.json({
-        id: prediction.id,
-        status: prediction.status,
-    });
+        res.json({
+            id: prediction.id,
+            status: prediction.status,
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to create prediction';
+        res.status(500).json({ error: message });
+    }
+});
+
+router.get('/:id', async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        const prediction = await replicate.predictions.get(id);
+
+        res.json({
+            id: prediction.id,
+            status: prediction.status,
+            output: prediction.output,
+            error: prediction.error,
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to get prediction';
+        res.status(500).json({ error: message });
+    }
 });
 
 router.post('/:id/cancel', async (req: Request, res: Response) => {
     const { id } = req.params;
-    await replicate.predictions.cancel(id);
 
-    res.json({ success: true });
+    try {
+        await replicate.predictions.cancel(id);
+        res.json({ success: true });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to cancel prediction';
+        res.status(500).json({ error: message });
+    }
 });
 
 export default router;
